@@ -6,8 +6,24 @@
     <body>
     
         <h1>Thank You</h1>
-
         <p>Thank you for your contact me.</p>
+
+        <!--formulario con campos de nombre del cliente  y departamento -->
+    <form action="procesar_formulario.php" method="post">
+        <label for="nombre">Nombre del Cliente:</label>
+        <input type="text" id="nombre" name="nombre" required><br><br>
+
+        <label for="departamento">Departamento:</label>
+        <select id="departamento" name="departamento" required>
+            <option value="atencion_cliente">Atención al Cliente</option>
+            <option value="soporte_tecnico">Soporte Técnico</option>
+            <option value="facturacion">Facturación</option>
+        </select><br><br>
+
+        <!-- Agregar otros campos si es necesario -->
+
+        <input type="submit" value="Enviar">
+    </form>
 
     </body>
 </html>
