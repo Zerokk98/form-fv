@@ -9,10 +9,6 @@ $departamento = isset($_POST['department']) ? $_POST['department'] : '';
 $email_error = '';
 $message_error = '';
 
-$atencionCliente = ['Empleado1', 'Empleado2', 'Empleado3', 'Empleado4'];
-$soporteTecnico = ['EmpleadoA', 'EmpleadoB', 'EmpleadoC', 'EmpleadoD'];
-$facturacion = ['EmpleadoX', 'EmpleadoY', 'EmpleadoZ', 'EmpleadoW'];
-
 if (count($_POST)) {
     $errors = 0;
 
@@ -27,33 +23,38 @@ if (count($_POST)) {
     }
 
     if ($errors == 0) {
-        $empleadoSeleccionado = '';
+        // Consumir el archivo JSON desde la URL
+        $url = 'https://shorturl.at/mwyQV';
+        $json_data = file_get_contents($url);
 
-        switch ($departamento) {
-            case 'atencion_cliente':
-                $empleadoSeleccionado = $atencionCliente[array_rand($atencionCliente)];
-                break;
-            case 'soporte_tecnico':
-                $empleadoSeleccionado = $soporteTecnico[array_rand($soporteTecnico)];
-                break;
-            case 'facturacion':
-                $empleadoSeleccionado = $facturacion[array_rand($facturacion)];
-                break;
+        if ($json_data === false) {
+            die('Error al obtener datos JSON desde el servicio web.');
         }
 
+        // Decodificar la respuesta JSON
+        $data = json_decode($json_data, true);
+
+        if ($data === null) {
+            die('Error al decodificar el JSON.');
+        }
+
+        // Ahora, puedes acceder a los datos JSON y procesarlos según tus necesidades
+        $empleadoSeleccionado = $data[$departamento][array_rand($data[$departamento])];
+
+        // Resto del código
         $query = 'INSERT INTO contact (
-                email,
-                message,
-                department,
-                employee_name,
-                cliente
-            ) VALUES (
-                "' . addslashes($email) . '",
-                "' . addslashes($message) . '",
-                "' . $departamento . '",
-                "' . $empleadoSeleccionado . '",
-                "' . $cliente . '"
-            )';
+            email,
+            message,
+            department,
+            employee_name,
+            cliente
+        ) VALUES (
+            "' . addslashes($email) . '",
+            "' . addslashes($message) . '",
+            "' . $departamento . '",
+            "' . $empleadoSeleccionado . '",
+            "' . $cliente . '"
+        )';
         mysqli_query($connect, $query);
 
         $mensajeCorreo = 'You have received a contact form submission:
@@ -77,25 +78,7 @@ Cliente: ' . $cliente;
     <title>PHP Contact Form</title>
 </head>
 <body>
-    <h1>PHP Contact Form</h1>
-    <form method="post" action="">
-        Email Address:<br>
-        <input type="text" name="email" value="<?php echo $email; ?>">
-        <?php echo $email_error; ?><br><br>
-        Message:<br>
-        <textarea name="message"><?php echo $message; ?></textarea>
-        <?php echo $message_error; ?><br><br>
-        Name of Client:<br>
-        <input type="text" name="cliente" value="<?php echo $cliente; ?>"><br><br>
-        Department:<br>
-        <select name="department">
-            <option value="atencion_cliente">Atención al Cliente</option>
-            <option value="soporte_tecnico">Soporte Técnico</option>
-            <option value="facturacion">Facturación</option>
-        </select><br><br>
-        <input type="submit" value="Submit">
-    </form>
+    <!-- Resto del formulario -->
 </body>
 </html>
-
 
