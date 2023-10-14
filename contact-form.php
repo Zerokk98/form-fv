@@ -1,84 +1,84 @@
 <?php
-$connect = mysqli_connect('localhost', 'usb', 'usb2022', 'formulatio');
+header('Content-Type: application/json');
 
-$email = isset($_POST['email']) ? $_POST['email'] : '';
-$message = isset($_POST['message']) ? $_POST['message'] : '';
-$cliente = isset($_POST['cliente']) ? $_POST['cliente'] : '';
-$departamento = isset($_POST['department']) ? $_POST['department'] : '';
+// Función para limpiar y validar una cadena
+function cleanAndValidate($value) {
+    $value = trim($value);
+    $value = filter_var($value, FILTER_SANITIZE_STRING);
+    return $value;
+}
 
-$email_error = '';
-$message_error = '';
+// Conexión a la base de datos
+$connect = new mysqli('localhost', 'usb', 'usb2022', 'formulatio');
+if ($connect->connect_error) {
+    die(json_encode(['success' => false, 'message' => 'Error de conexión a la base de datos']));
+}
 
-if (count($_POST)) {
-    $errors = 0;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $email = cleanAndValidate($_POST['email']);
+    $message = cleanAndValidate($_POST['message']);
+    $cliente = cleanAndValidate($_POST['cliente']);
+    $departamento = cleanAndValidate($_POST['department']);
 
-    if ($email == '') {
-        $email_error = 'Please enter an email address';
-        $errors++;
-    }
+    if (empty($email) || empty($message)) {
+        $errors = [];
+        if (empty($email)) {
+            $errors['email'] = 'Por favor ingrese una dirección de correo válida.';
+        }
+        if (empty($message)) {
+            $errors['message'] = 'Por favor ingrese un mensaje.';
+        }
+        echo json_encode(['success' => false, 'errors' => $errors]);
+    } else {
+        $atencionCliente = ['Empleado1', 'Empleado2', 'Empleado3', 'Empleado4'];
+        $soporteTecnico = ['EmpleadoA', 'EmpleadoB', 'EmpleadoC', 'EmpleadoD'];
+        $facturacion = ['EmpleadoX', 'EmpleadoY', 'EmpleadoZ', 'EmpleadoW'];
 
-    if ($message == '') {
-        $message_error = 'Please enter a message';
-        $errors++;
-    }
+        $empleadoSeleccionado = '';
+        switch ($departamento) {
+            case 'atencion_cliente':
+                $empleadoSeleccionado = $atencionCliente[array_rand($atencionCliente)];
+                break;
+            case 'soporte_tecnico':
+                $empleadoSeleccionado = $soporteTecnico[array_rand($soporteTecnico)];
+                break;
+            case 'facturacion':
+                $empleadoSeleccionado = $facturacion[array_rand($facturacion)];
+                break;
+        }
 
-    if ($errors == 0) {
-        // Consumir el archivo JSON desde la URL
-        $url = 'https://shorturl.at/mwyQV';
-        $json_data = file_get_contents($url);
+        $json_url = 'https://gitlab.com/usb-web-programming-autumn-2023/php/rest-read-json-v2';
+        $json_data = file_get_contents($json_url);
 
         if ($json_data === false) {
-            die('Error al obtener datos JSON desde el servicio web.');
+            echo json_encode(['success' => false, 'message' => 'Error al obtener datos JSON del servicio web']);
+            exit;
         }
 
-        // Decodificar la respuesta JSON
-        $data = json_decode($json_data, true);
+        $json_data = json_decode($json_data, true);
 
-        if ($data === null) {
-            die('Error al decodificar el JSON.');
+        if ($json_data === null) {
+            echo json_encode(['success' => false, 'message' => 'Error al decodificar el JSON']);
+            exit;
         }
 
-        // Ahora, puedes acceder a los datos JSON y procesarlos según tus necesidades
-        $empleadoSeleccionado = $data[$departamento][array_rand($data[$departamento])];
+        // Aquí puedes acceder y procesar los datos JSON según tus necesidades
+        // Por ejemplo, si el JSON contiene un campo "empleados", podrías seleccionar un empleado de allí
 
-        // Resto del código
-        $query = 'INSERT INTO contact (
-            email,
-            message,
-            department,
-            employee_name,
-            cliente
-        ) VALUES (
-            "' . addslashes($email) . '",
-            "' . addslashes($message) . '",
-            "' . $departamento . '",
-            "' . $empleadoSeleccionado . '",
-            "' . $cliente . '"
-        )';
-        mysqli_query($connect, $query);
+        $query = 'INSERT INTO contact (email, message, department, employee_name, cliente) VALUES (?, ?, ?, ?, ?)';
+        $stmt = $connect->prepare($query);
+        $stmt->bind_param("sssss", $email, $message, $departamento, $empleadoSeleccionado, $cliente);
 
-        $mensajeCorreo = 'You have received a contact form submission:
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Formulario enviado con éxito']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Error al enviar el formulario']);
+        }
 
-Email: ' . $email . '
-Message: ' . $message . '
-Department: ' . $departamento . '
-Employee Name: ' . $empleadoSeleccionado . '
-Cliente: ' . $cliente;
-
-        mail('poveda.geovanny@hotmail.com', 'Contact Form Submission', $mensajeCorreo);
-
-        header('Location: thankyou.html');
-        die();
+        $stmt->close();
     }
+} else {
+    echo json_encode(['success' => false, 'message' => 'Método de solicitud no válido']);
 }
-?>
-<!DOCTYPE html>
-<html>
-<head>
-    <title>PHP Contact Form</title>
-</head>
-<body>
-    <!-- Resto del formulario -->
-</body>
-</html>
 
+$connect->close();
